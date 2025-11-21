@@ -1,27 +1,3 @@
-<!-- <section class="page">
-  <h2>Contacts</h2>
-
-  <form class="add-form" [formGroup]="form" (ngSubmit)="submit()">
-    <input formControlName="name" placeholder="Name" required />
-    <input formControlName="phone" placeholder="Phone" />
-    <input formControlName="company" placeholder="Company" />
-    <button type="submit" [disabled]="loading">Add</button>
-  </form>
-
-  <div class="list">
-    <table>
-      <thead><tr><th>Name</th><th>Phone</th><th>Company</th><th>Created</th></tr></thead>
-      <tbody>
-        <tr *ngFor="let c of contacts">
-          <td>{{c.name}}</td>
-          <td>{{c.phone}}</td>
-          <td>{{c.company}}</td>
-          <td>{{c.createdAt | date:'short'}}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</section> -->
 <section class="contacts-page">
   <!-- Top row -->
   <div class="top-row">
@@ -84,7 +60,7 @@
   <!-- KPI row -->
   <div class="kpi-row">
     <div class="kpi">
-      <div class="kpi-value">{{ contacts?.length || 0 }}</div>
+      <div class="kpi-value">{{ contacts.length || 0 }}</div>
       <div class="kpi-label">Total Contacts</div>
       <div class="kpi-sub">+8 this month</div>
     </div>
