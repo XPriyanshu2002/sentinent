@@ -1,0 +1,10 @@
+.sidebar {
+  width: 220px;
+  background: #0f172a;
+  color: #fff;
+  min-height: 100vh;
+  padding: 1rem;
+  .logo { font-weight: 700; margin-bottom: 1rem; font-size: 1.1rem; }
+  nav a { display:block; color: #cbd5e1; padding: 0.6rem 0; text-decoration:none; }
+  nav a.active { color: #fff; font-weight:600; }
+}

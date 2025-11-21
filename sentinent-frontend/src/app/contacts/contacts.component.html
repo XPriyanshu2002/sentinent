@@ -1,0 +1,198 @@
+<!-- <section class="page">
+  <h2>Contacts</h2>
+
+  <form class="add-form" [formGroup]="form" (ngSubmit)="submit()">
+    <input formControlName="name" placeholder="Name" required />
+    <input formControlName="phone" placeholder="Phone" />
+    <input formControlName="company" placeholder="Company" />
+    <button type="submit" [disabled]="loading">Add</button>
+  </form>
+
+  <div class="list">
+    <table>
+      <thead><tr><th>Name</th><th>Phone</th><th>Company</th><th>Created</th></tr></thead>
+      <tbody>
+        <tr *ngFor="let c of contacts">
+          <td>{{c.name}}</td>
+          <td>{{c.phone}}</td>
+          <td>{{c.company}}</td>
+          <td>{{c.createdAt | date:'short'}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section> -->
+<section class="contacts-page">
+  <!-- Top row -->
+  <div class="top-row">
+    <div class="title-block">
+      <h1>Contacts</h1>
+      <p class="muted">Manage contact details, companies and assignments</p>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-ghost">Bulk actions</button>
+      <button class="btn btn-primary" (click)="openAdd()">+ Add contact</button>
+    </div>
+  </div>
+
+  <!-- Add form panel (inline) -->
+  <div class="add-panel" *ngIf="showAddForm">
+    <form [formGroup]="addForm" (ngSubmit)="submitAdd()" class="add-form-panel">
+      <div class="row">
+        <div class="col">
+          <label>Contact Name *</label>
+          <input formControlName="name" placeholder="Full name" />
+        </div>
+
+        <div class="col">
+          <label>Phone</label>
+          <input formControlName="phone" placeholder="+91 98765 43210" />
+        </div>
+
+        <div class="col">
+          <label>Company</label>
+          <input formControlName="company" placeholder="Company name" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label>Type</label>
+          <select formControlName="type">
+            <option *ngFor="let t of typeOptions" [value]="t">{{ t }}</option>
+          </select>
+        </div>
+
+        <div class="col"></div>
+
+        <div class="col"></div>
+      </div>
+
+      <div class="row actions-row">
+        <div class="left"></div>
+        <div class="right">
+          <button type="button" class="btn btn-ghost" (click)="closeAdd()">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="submitting">
+            {{ submitting ? 'Adding...' : 'Add contact' }}
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- KPI row -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-value">{{ contacts?.length || 0 }}</div>
+      <div class="kpi-label">Total Contacts</div>
+      <div class="kpi-sub">+8 this month</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-value">124</div>
+      <div class="kpi-label">Companies</div>
+      <div class="kpi-sub">4 new</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-value">92%</div>
+      <div class="kpi-label">Response Rate</div>
+      <div class="kpi-sub">+3%</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-value">6</div>
+      <div class="kpi-label">Open Deals</div>
+      <div class="kpi-sub">2 urgent</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="search">
+      <input [formControl]="searchControl" placeholder="Search contact or company" />
+      <svg class="search-icon" viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M10.5 18A7.5 7.5 0 1 1 10.5 3a7.5 7.5 0 0 1 0 15z" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div class="filter-controls">
+      <select [formControl]="filterStatusControl">
+        <option value="">All status</option>
+        <option *ngFor="let s of statusOptions" [value]="s">{{s}}</option>
+      </select>
+
+      <select [formControl]="filterTypeControl">
+        <option value="">All types</option>
+        <option *ngFor="let t of typeOptions" [value]="t">{{t}}</option>
+      </select>
+
+      <button class="btn btn-ghost" (click)="clearFilters()">Clear all</button>
+    </div>
+  </div>
+
+  <!-- Table card -->
+  <div class="table-card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th class="col-checkbox"><input type="checkbox" /></th>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Company</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Added</th>
+          <th class="col-actions"></th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <ng-container *ngIf="loading; else dataRows">
+          <tr class="skeleton-row" *ngFor="let n of [1,2,3,4]">
+            <td colspan="8"><div class="shimmer"></div></td>
+          </tr>
+        </ng-container>
+
+        <ng-template #dataRows>
+          <tr *ngFor="let c of pagedItems; let i = index" class="table-row" [class.alt]="i % 2 === 1">
+            <td class="col-checkbox"><input type="checkbox" /></td>
+
+            <td class="col-name">
+              <div class="cell">
+                <div class="avatar" [style.background]="avatarColor(c.name)">{{ initials(c.name) }}</div>
+                <div class="meta">
+                  <div class="name">{{ c.name }}</div>
+                  <div class="muted small">{{ c.company || '—' }}</div>
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <div class="muted small">{{ c.phone || '—' }}</div>
+            </td>
+
+            <td>{{ c.company || '—' }}</td>
+
+            <td><span class="chip">{{ c.type || '—' }}</span></td>
+
+            <td><span class="badge" [ngClass]="statusClass(c.status)">{{ c.status || 'Active' }}</span></td>
+
+            <td>{{ c.createdAt | date:'MMM d, yyyy' }}</td>
+
+            <td class="col-actions">
+              <button class="icon-btn" title="View" aria-label="View">
+                <svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>
+              </button>
+              <button class="icon-btn" title="Edit" aria-label="Edit">
+                <svg viewBox="0 0 24 24"><path d="M3 21l3-1 11-11 1-3-3 1L4 20z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+              </button>
+            </td>
+          </tr>
+        </ng-template>
+      </tbody>
+    </table>
+
+    <div class="table-footer">
+      <button class="btn btn-ghost" [disabled]="page === 1" (click)="prevPage()">Previous</button>
+      <div class="page-info">Page {{page}} of {{totalPages}}</div>
+      <button class="btn btn-ghost" [disabled]="page === totalPages" (click)="nextPage()">Next</button>
+    </div>
+  </div>
+</section>

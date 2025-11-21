@@ -1,0 +1,12 @@
+/* You can add global styles to this file, and also import other style files */
+/* Global styles */
+:root {
+  --bg: #f8fafc;
+  --muted: #64748b;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; font-family: Inter, Roboto, Arial, sans-serif; background: var(--bg); color: #0f172a; }
+
+/* simple utility */
+.page { padding: 1rem; }
