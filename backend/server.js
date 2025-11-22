@@ -29,14 +29,16 @@ app.get('/api/participants', async (req, res) => {
 });
 
 app.post('/api/participants', async (req, res) => {
-  const { name, email, role } = req.body || {};
+  const { name, email = '', role = 'Participant', ndis = '', status = 'Active' } = req.body || {};
   if (!name) return res.status(400).json({ message: 'name required' });
 
   const newItem = {
     id: nanoid(),
     name,
-    email: email || '',
-    role: role || '',
+    email,
+    role,
+    ndis,
+    status,
     createdAt: new Date().toISOString()
   };
 

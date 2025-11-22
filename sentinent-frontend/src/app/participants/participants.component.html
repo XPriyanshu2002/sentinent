@@ -32,6 +32,13 @@
             <option *ngFor="let r of roleOptions" [value]="r">{{ r }}</option>
           </select>
         </div>
+
+        <div class="col">
+          <label>Status</label>
+          <select formControlName="status">
+            <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
+          </select>
+        </div>
       </div>
 
       <div class="row actions-row">
@@ -45,6 +52,7 @@
       </div>
     </form>
   </div>
+
 
   <!-- KPI row (same as earlier) -->
   <div class="kpi-row">
@@ -96,29 +104,29 @@
   </div> -->
 
   <div class="filters">
-  <div class="search">
-    <input [formControl]="searchControl" placeholder="Search contact" />
-    <svg class="search-icon" viewBox="0 0 24 24">
-      <path d="M21 21l-4.35-4.35M10.5 18A7.5 7.5 0 1 1 10.5 3a7.5 7.5 0 0 1 0 15z"
-            stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
+    <div class="search">
+      <input [formControl]="searchControl" placeholder="Search contact" />
+      <svg class="search-icon" viewBox="0 0 24 24">
+        <path d="M21 21l-4.35-4.35M10.5 18A7.5 7.5 0 1 1 10.5 3a7.5 7.5 0 0 1 0 15z" stroke="currentColor"
+          stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </div>
+
+    <div class="filter-controls">
+      <!-- use reactive controls instead of ngModel -->
+      <select [formControl]="filterStatusControl">
+        <option value="">All status</option>
+        <option *ngFor="let s of statusOptions" [value]="s">{{s}}</option>
+      </select>
+
+      <select [formControl]="filterRoleControl">
+        <option value="">All roles</option>
+        <option *ngFor="let r of roleOptions" [value]="r">{{r}}</option>
+      </select>
+
+      <button class="btn btn-ghost" (click)="clearFilters()">Clear all</button>
+    </div>
   </div>
-
-  <div class="filter-controls">
-    <!-- use reactive controls instead of ngModel -->
-    <select [formControl]="filterStatusControl">
-      <option value="">All status</option>
-      <option *ngFor="let s of statusOptions" [value]="s">{{s}}</option>
-    </select>
-
-    <select [formControl]="filterRoleControl">
-      <option value="">All roles</option>
-      <option *ngFor="let r of roleOptions" [value]="r">{{r}}</option>
-    </select>
-
-    <button class="btn btn-ghost" (click)="clearFilters()">Clear all</button>
-  </div>
-</div>
 
   <!-- Table card -->
   <div class="table-card">

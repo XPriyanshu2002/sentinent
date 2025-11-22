@@ -1,56 +1,9 @@
-// import { Component, OnInit } from '@angular/core';
-// import { FormGroup, FormControl, Validators } from '@angular/forms';
-// import { PollingService } from '../services/polling.service';
-// import { ApiService } from '../services/api.service';
-
-// @Component({
-//   selector: 'app-participants',
-//   templateUrl: './participants.component.html',
-//   styleUrls: ['./participants.component.scss']
-// })
-// export class ParticipantsComponent implements OnInit {
-//   participants: any[] = [];
-//   form = new FormGroup({
-//     name: new FormControl('', Validators.required),
-//     email: new FormControl(''),
-//     role: new FormControl('')
-//   });
-//   loading = false;
-
-//   constructor(private poll: PollingService, private api: ApiService) {}
-
-//   ngOnInit() {
-//     this.poll.participantsStream(3000).subscribe({
-//       next: (data: any) => { if (Array.isArray(data)) this.participants = data; },
-//       error: err => console.error('poll error', err)
-//     });
-//   }
-
-//   submit() {
-//     if (this.form.invalid) return;
-//     this.loading = true;
-//     this.api.addParticipant(this.form.value).subscribe({
-//       next: () => {
-//         this.form.reset();
-//         this.loading = false;
-//         // Polling will update the list automatically.
-//       },
-//       error: (err) => {
-//         console.error('Add participant failed', err);
-//         this.loading = false;
-//       }
-//     });
-//   }
-// }
-
-
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { PollingService } from '../services/polling.service';
 import { ApiService } from '../services/api.service';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
-import { finalize } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, takeUntil, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-participants',
@@ -76,7 +29,7 @@ export class ParticipantsComponent implements OnInit, OnDestroy {
   filterRoleControl = new FormControl('');   // reactive role filter
 
   statusOptions = ['Active', 'On leave', 'Under review'];
-  roleOptions = ['Participant', 'Manager', 'Caregiver', 'Dev', 'Tester'];
+  roleOptions = ['Participant', 'Manager', 'Caregiver'];
 
   // pagination
   page = 1;
@@ -88,12 +41,13 @@ export class ParticipantsComponent implements OnInit, OnDestroy {
   // keep a normalized snapshot to compare polling results and avoid flicker
   private lastSnapshot = '';
 
-  // reactive add form
+  // reactive add form (NOW includes status)
   addForm = new FormGroup({
     name: new FormControl('', Validators.required),
     email: new FormControl('', [Validators.email]),
     role: new FormControl('Participant'),
-    ndis: new FormControl('')
+    ndis: new FormControl(''),
+    status: new FormControl('Active') // <-- new status control default Active
   });
 
   constructor(private poll: PollingService, private api: ApiService) {}
@@ -111,7 +65,7 @@ export class ParticipantsComponent implements OnInit, OnDestroy {
         error: () => { this.loading = false; }
       });
 
-    // Wire up search/filter controls (debounce for search)
+    // Wire up search/filter controls (debounced for search)
     this.searchControl.valueChanges
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
       .subscribe(() => this.applyFilters());
@@ -128,23 +82,40 @@ export class ParticipantsComponent implements OnInit, OnDestroy {
   /**
    * Called when polling returns new server data.
    * Only replace local participants if the normalized snapshot changed.
+   * Also normalizes missing fields (like status) so UI never shows blanks.
    */
   private applyServerUpdate(serverList: any[]) {
-    const snapshot = this.normalizeAndStringify(serverList);
-    if (snapshot === this.lastSnapshot) {
-      // no changes — don't reassign, prevents visible flicker
-      return;
-    }
-    this.lastSnapshot = snapshot;
-
-    // set canonical data (server authoritative)
-    this.participants = serverList.slice(); // shallow copy
-    this.applyFilters();
+  const snapshot = this.normalizeAndStringify(serverList);
+  if (snapshot === this.lastSnapshot) {
+    return; // no change - avoids re-render flicker
   }
+  this.lastSnapshot = snapshot;
 
-  /**
-   * Normalize data for deterministic comparison.
-   */
+  // Build a map of current local participants by id for merging optimistic fields
+  const localMap = new Map<string, any>();
+  (this.participants || []).forEach(p => {
+    if (p && p.id) localMap.set(p.id, p);
+  });
+
+  // normalize and merge: prefer server values, but fill missing fields from local optimistic if present
+  this.participants = (serverList || []).map(s => {
+    const local = s && s.id ? localMap.get(s.id) : undefined;
+    return {
+      id: s.id,
+      name: s.name || (local && local.name) || '',
+      email: s.email || (local && local.email) || '',
+      role: s.role || (local && local.role) || 'Participant',
+      status: s.status || (local && local.status) || 'Active',
+      ndis: s.ndis || (local && local.ndis) || '',
+      createdAt: s.createdAt || (local && local.createdAt) || new Date().toISOString(),
+      ...s
+    };
+  });
+
+  this.applyFilters();
+}
+
+
   private normalizeAndStringify(arr: any[]) {
     const normalized = (arr || []).map(item => ({
       id: item.id,
@@ -192,7 +163,6 @@ export class ParticipantsComponent implements OnInit, OnDestroy {
     this.searchControl.setValue('');
     this.filterStatusControl.setValue('');
     this.filterRoleControl.setValue('');
-    // reset page
     this.page = 1;
     this.applyFilters();
   }
@@ -215,19 +185,25 @@ export class ParticipantsComponent implements OnInit, OnDestroy {
 
   // toggle add form
   openAdd() { this.showAddForm = true; }
-  closeAdd() { this.showAddForm = false; this.addForm.reset({ role: 'Participant' }); }
+  closeAdd() { this.showAddForm = false; this.addForm.reset({ role: 'Participant', status: 'Active' }); }
 
+  /**
+   * Add participant: optimistic UI + POST + merge server response
+   */
   submitAdd() {
     if (this.addForm.invalid || this.submitting) return;
     this.submitting = true;
 
+    // payload includes status now
     const payload = {
       name: this.addForm.value.name,
       email: this.addForm.value.email,
       role: this.addForm.value.role,
-      ndis: this.addForm.value.ndis
+      ndis: this.addForm.value.ndis,
+      status: this.addForm.value.status || 'Active'
     };
 
+    // optimistic item
     const tmpId = 'tmp-' + Date.now();
     const optimisticItem = {
       id: tmpId,
@@ -235,29 +211,42 @@ export class ParticipantsComponent implements OnInit, OnDestroy {
       email: payload.email,
       role: payload.role,
       ndis: payload.ndis,
-      status: 'Active',
+      status: payload.status,
       createdAt: new Date().toISOString(),
       _optimistic: true
     };
 
+    // insert optimistic at top and refresh filtered/paged view
     this.participants.unshift(optimisticItem);
     this.applyFilters();
 
+    // call API
     this.api.addParticipant(payload)
       .pipe(finalize(() => { this.submitting = false; }))
       .subscribe({
         next: (serverItem: any) => {
+          // merge: server is authoritative but fill defaults from optimistic if missing
+          const merged = {
+            status: optimisticItem.status || 'Active',
+            role: optimisticItem.role || 'Participant',
+            ndis: optimisticItem.ndis || '',
+            ...serverItem
+          };
+
           const idx = this.participants.findIndex(p => p.id === tmpId);
           if (idx >= 0) {
-            this.participants[idx] = { ...serverItem };
+            this.participants[idx] = { ...merged };
           } else {
-            this.participants.unshift(serverItem);
+            this.participants.unshift(merged);
           }
+
+          // update snapshot so polling won't immediately overwrite
           this.lastSnapshot = this.normalizeAndStringify(this.participants);
           this.applyFilters();
           this.closeAdd();
         },
         error: (err) => {
+          // remove optimistic entry on error
           this.participants = this.participants.filter(p => p.id !== tmpId);
           this.applyFilters();
           console.error('Add failed', err);

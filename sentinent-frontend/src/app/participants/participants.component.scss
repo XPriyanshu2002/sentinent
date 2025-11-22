@@ -154,9 +154,21 @@
     .muted { color:#64748b; font-size: 13px; }
 
     .badge {
-      display:inline-block; padding:6px 10px; border-radius:999px; font-weight:600; font-size:12px;
-      &.Active { background:#bbf7d0; color:#065f46; }
-      &.UnderReview, &.Under_Review { background:#fee2e2; color:#991b1b;}
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 12px;
+      line-height: 1;
+      text-transform: none;
+      white-space: nowrap;
+      transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+      animation: badgeIn .16s ease both;
+      &.Active, &[class*="active" i] { background:#bbf7d0; color:#065f46; box-shadow: 0 6px 16px rgba(6,95,70,0.06);}
+      &.UnderReview, &.Under_Review, &[class*="underreview" i], &[class*="under review" i] { background: linear-gradient(180deg,#fee2e2,#fee2f0); color: #9f1239; box-shadow: 0 6px 16px rgba(159,18,57,0.06);}
+      &.Onleave, &.On_Leave, &[class*="onleave" i], &[class*="on leave" i] { background: linear-gradient(180deg,#fff7ed,#fff3d8); color:#92400e; box-shadow: 0 6px 16px rgba(146,64,14,0.06); }
     }
 
     .chips { display:flex; gap:8px; flex-wrap:wrap; }
@@ -171,6 +183,40 @@
       &:hover { background: rgba(15,23,42,0.04) }
       svg { width:18px; height:18px; color:#475569; }
     }
+  }
+
+  /* Optional small colored dot on the left of the badge */
+  .badge::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    flex: 0 0 8px;
+    background: currentColor; /* same color as text for visual contrast */
+    opacity: 0.95;
+    transform: translateY(0);
+  }
+
+  /* subtle hover/press micro-interaction */
+  .badge:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(2,6,23,0.06); }
+
+  /* entrance animation for badges */
+  @keyframes badgeIn {
+    from { opacity: 0; transform: translateY(-6px) scale(.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* small pulse helper you can add on newly-created items:
+    add class "pulse" to the badge element temporarily to show attention */
+  .badge.pulse {
+    animation: badgeIn .12s ease both, pulse 1.6s ease-in-out 1;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 6px 20px rgba(0,0,0,0.04); transform: scale(1); }
+    50% { box-shadow: 0 14px 36px rgba(0,0,0,0.06); transform: scale(1.02); }
+    100% { box-shadow: 0 6px 20px rgba(0,0,0,0.04); transform: scale(1); }
   }
 
   .table-footer {
@@ -220,6 +266,12 @@
       .right { display:flex; gap:10px; }
     }
   }
+  .add-form-panel .col select {
+    height: 40px;
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+
 }
 
 /* subtle highlight for optimistic rows */
